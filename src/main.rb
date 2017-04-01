@@ -11,10 +11,9 @@ class Main
     @coloring.createPopulation(1000)
     puts "Initial population size: #{@coloring.population.length}"
     puts "Conflicts average: #{@coloring.countAverage}"
-    puts "Graph degree: #{@coloring.countDegree}"
-    (1..1000).each do |i|
+    (1..200).each do |i|
       @coloring.selectCandidates
-      if i % 50 == 0
+      if i % 25 == 0
         puts "Iteration #{i}: selected #{@coloring.population.length} candidates"
       end
       @coloring.crossbreed(1000)
@@ -22,7 +21,7 @@ class Main
         puts "Completed after #{i} iterations"
         break
       end
-      if i % 50 == 0
+      if i % 25 == 0
         puts "Conflicts average: #{@coloring.countAverage}"
       end
     end

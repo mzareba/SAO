@@ -1,67 +1,22 @@
+require_relative 'creator'
+require_relative 'finder'
+
 class Coloring
   attr_accessor :list, :edges, :population
+  attr_accessor :connectedComponents, :visited
   attr_accessor :n, :m, :k
   attr_reader :name
 
   def initialize(input)
+    creator = Creator.new
     if input.size == 3
       @n, @m, @k = input.map(&:to_i)
-      self.generateInput
+      @edges = creator.generateInput(@n, @m)
     else
-      @name = '../input/' + input[0]
-      self.parseInput
+      file = '../input/' + input[0]
+      @n, @m, @k, @edges = creator.parseInput(file)
     end
-    self.createList
-  end
-
-  def parseInput
-    File.readlines(@name).each do |line|
-      line = line.split.map { |x| x.to_i }
-      if @n.nil?
-        @n, @m, @k = line
-        @edges = Array.new { Array.new }
-      else
-        u, v = line
-        @edges.push([u, v])
-      end
-    end
-  end
-
-  def generateInput
-    @edges = Array.new { Array.new }
-    difference = @m
-    100.times do
-      self.generatePairs(difference)
-      @edges = @edges.uniq
-      difference = @m - @edges.size
-      break if difference == 0
-    end
-    if difference != 0
-      abort("Input rejected")
-    end
-  end
-
-  def generatePairs(size)
-    size.times do
-      u, v = Array.new(2) { Random.new.rand(0...@n) }
-      if u != v
-        @edges.push([u, v])
-      end
-    end
-  end
-
-  def createList
-    @list = Array.new(@n) { Array.new }
-    @edges.each do |edge|
-      u, v = edge
-      @list[u].push(v)
-      @list[v].push(u)
-    end
-  end
-
-  def countDegree
-    sizes = @list.map(&:size)
-    return sizes.max
+    finder = Finder.new(@n, @m, @edges)
   end
 
   def createPopulation(size)
