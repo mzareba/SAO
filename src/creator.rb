@@ -17,7 +17,7 @@ class Creator
   def generateInput(n, m)
     edges = Array.new { Array.new }
     diff = m
-    100.times do
+    1000.times do
       self.generatePairs(n, diff, edges)
       edges = edges.uniq
       diff = m - edges.size

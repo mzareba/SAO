@@ -5,7 +5,6 @@ class Coloring
   attr_accessor :list, :edges, :population
   attr_accessor :connectedComponents, :visited
   attr_accessor :n, :m, :k
-  attr_reader :name
 
   def initialize(input)
     creator = Creator.new
@@ -22,8 +21,23 @@ class Coloring
   def createPopulation(size)
     @population = Array.new(size) { Array.new(@n, nil) }
     @population = @population.map { |colors|
-      colors.map { |color| Random.new.rand(0...@k) }
+      colors = colors.map { |color| Random.new.rand(0...@k) }
+      colors = self.getCanonicalForm(colors)
     }
+  end
+
+  def getCanonicalForm(colors)
+    switch = Array.new(@k, nil)
+    color = 0
+    (0...n).each do |i|
+      j = colors[i]
+      if switch[j].nil?
+        switch[j] = color
+        color += 1
+      end
+      colors[i] = switch[j]
+    end
+    return colors
   end
 
   def countConflicts(colors)
@@ -52,6 +66,7 @@ class Coloring
         @population.delete(colors)
       end
     end
+    return @population.length
   end
 
   def crossbreed(size)
@@ -59,6 +74,7 @@ class Coloring
     size.times do
       i, j = Array.new(2) { Random.new.rand(0...@population.length) }
       successor = self.createSuccessor(@population[i], @population[j])
+      successor = self.getCanonicalForm(successor)
       successors.push(successor)
     end
     @population = successors
@@ -71,5 +87,21 @@ class Coloring
       successor[i] = selected == 0 ? first[i] : second[i]
     end
     return successor
+  end
+
+  def mutate
+    selected = Array.new { Array.new }
+    (0...@population.length).each_with_index do |colors, index|
+      dice = (0..100).to_a.sample
+      if dice == 0
+        selected.push(index)
+      end
+    end
+    selected = selected.each do |v|
+      colors = @population[v]
+      i, j = Array.new(2) { Random.new.rand(0...@n) }
+      colors[i], colors[j] = colors[j], colors[i]
+      @population[v] = self.getCanonicalForm(colors)
+    end
   end
 end
