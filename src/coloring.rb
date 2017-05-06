@@ -12,7 +12,7 @@ class Coloring
       @n, @m, @k = input.map(&:to_i)
       @edges = creator.generateInput(@n, @m)
     else
-      file = '../input/' + input[0]
+      file = 'input/' + input[0]
       @n, @m, @k, @edges = creator.parseInput(file)
     end
     finder = Finder.new(@n, @m, @edges)

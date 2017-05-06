@@ -36,6 +36,7 @@ class Finder
     else
       puts "Chromatic number not greater than #{@limit}"
     end
+    puts
   end
 
   def isComplete
