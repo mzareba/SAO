@@ -3,26 +3,27 @@ require_relative 'presentation'
 
 class Main
   attr_reader :coloring, :presentation, :technique
-  attr_accessor :conflicts, :tolerance, :warnings
+  attr_accessor :conflicts, :credit, :warnings
 
   def initialize(coloring, technique)
     @coloring, @technique = coloring, technique
     @conflicts = Array.new
-    @tolerance = 20
+    @credit = 20
     @warnings = 0
   end
 
   def process
-    @coloring.createPopulation(500)
+    @coloring.createPopulation
+    average = @coloring.countAverage.round(1)
+    @conflicts.push(average)
     self.presentIterationStatus(0)
-    @conflicts.push(@coloring.countAverage)
     (1..500).each do |i|
-      size = @coloring.selectCandidates
-      self.applyTechnique
-      @conflicts.push(@coloring.countAverage)
+      self.applyTechnique(i)
+      average = @coloring.countAverage.round(1)
+      @conflicts.push(average)
       self.presentIterationStatus(i)
       self.controlProgress
-      if @conflicts[-1] == 0.0 || @warnings == @tolerance
+      if @conflicts[-1] == 0.0 || @credit == 0 || @warnings == 10
         self.presentFinalMessage(i)
         break
       end
@@ -32,35 +33,34 @@ class Main
 
   def presentIterationStatus(i)
     if i % 50 == 0
-      print i == 0 ? "Initial population size: " : "Iteration #{i}: "
-      puts "selected #{@coloring.population.length} candidates"
-      puts "Conflicts average: #{@coloring.countAverage}"
+      iteration = i == 0 ? 'start' : i
+      puts "Conflicts average (#{iteration}): #{@conflicts[i]}"
     end
   end
 
-  def applyTechnique
+  def applyTechnique(i)
     case @technique
     when "crossbreed"
-      @coloring.crossbreed(500)
+      @coloring.crossbreedV2
     when "mutation"
-      @coloring.mutate
+      @coloring.mutationV2(i)
     when "combined"
-      @coloring.crossbreed(500)
-      @coloring.mutate
+      @coloring.crossbreedV2
+      @coloring.mutationV2(i)
     end
   end
 
   def controlProgress
-    if @conflicts[-1] >= @conflicts[-2] - 0.05
+    if @conflicts[-1] >= @conflicts[-2]
       @warnings += 1
     elsif @warnings > 0
-      @tolerance = @tolerance > 5 ? @tolerance - 1 : 5
+      @credit -= 1
       @warnings = 0
     end
   end
 
   def presentFinalMessage(i)
-    puts "Completed after #{i} iterations (#{@conflicts[-1]})"
+    puts "Completed after #{i} iterations: #{@conflicts[-1]}"
   end
 end
 
@@ -70,7 +70,7 @@ if [1,3].include?(ARGV.size)
   techniques = ['crossbreed', 'mutation', 'combined']
   techniques.each do |technique|
     puts "Selected technique: #{technique}"
-    main = Main.new(coloring, "combined")
+    main = Main.new(coloring, technique)
     main.process
     conflicts.push(main.conflicts)
   end
