@@ -8,7 +8,7 @@ class Main
   def initialize(coloring, technique)
     @coloring, @technique = coloring, technique
     @conflicts = Array.new
-    @credit = 20
+    @credit = 100
     @warnings = 0
   end
 
@@ -40,11 +40,18 @@ class Main
 
   def applyTechnique(i)
     case @technique
-    when "crossbreed"
+    when "crossbreedV1"
+      @coloring.crossbreedV1
+    when "mutationV1"
+      @coloring.mutationV1
+    when "combinedV1"
+      @coloring.crossbreedV1
+      @coloring.mutationV1
+    when "crossbreedV2"
       @coloring.crossbreedV2
-    when "mutation"
+    when "mutationV2"
       @coloring.mutationV2(i)
-    when "combined"
+    when "combinedV2"
       @coloring.crossbreedV2
       @coloring.mutationV2(i)
     end
@@ -53,6 +60,7 @@ class Main
   def controlProgress
     if @conflicts[-1] >= @conflicts[-2]
       @warnings += 1
+      @credit -= 1
     elsif @warnings > 0
       @credit -= 1
       @warnings = 0
@@ -67,7 +75,7 @@ end
 if [1,3].include?(ARGV.size)
   coloring = Coloring.new(ARGV)
   conflicts = Array.new
-  techniques = ['crossbreed', 'mutation', 'combined']
+  techniques = ['crossbreedV1', 'crossbreedV2', 'mutationV1', 'mutationV2', 'combinedV1', 'combinedV2']
   techniques.each do |technique|
     puts "Selected technique: #{technique}"
     main = Main.new(coloring, technique)

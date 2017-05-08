@@ -2,7 +2,7 @@ require_relative 'creator'
 require_relative 'finder'
 
 class Coloring
-  attr_accessor :list, :edges, :population, :points
+  attr_accessor :list, :edges, :population, :score
   attr_accessor :connectedComponents, :visited
   attr_accessor :n, :m, :k
   attr_reader :size
@@ -26,7 +26,7 @@ class Coloring
       colors = colors.map { |color| Random.new.rand(0...@k) }
       colors = self.getCanonicalForm(colors)
     }
-    @points = Array.new(@size, 0)
+    @score = Array.new(@size, 0)
   end
 
   def getCanonicalForm(colors)
@@ -62,7 +62,12 @@ class Coloring
     return counter.to_f / @population.length
   end
 
-  def countPoints
+  def scaleScore(num, min, max)
+    normal = (num - min).to_f / (max - min).to_f
+    return 2**(4 * (1 - normal)).to_i
+  end
+
+  def countScore
     length = @population.length
     personal = Array.new(length)
     @population.each_with_index do |colors, index|
@@ -70,12 +75,20 @@ class Coloring
     end
     min, max = personal.minmax
     if min == max
-      @points = Array.new(length, 1)
+      @score = Array.new(length, 1)
       return true
     end
-    @points = personal.map { |num| (num - min).to_f / (max - min).to_f }
-    @points = @points.map { |score| (10 * (1-score)).to_i }
-    # @points = @points.map { |score| 7 - (Math.log(101-score, 2).to_i) }
+    @score = personal.map { |num| self.scaleScore(num, min, max) }
+  end
+
+  def createCards
+    self.countScore
+    length = @population.length
+    cards = Array.new
+    (0...length).each do |i|
+      cards += Array.new(@score[i], i)
+    end
+    return cards
   end
 
   def qualifyCandidates
@@ -88,8 +101,8 @@ class Coloring
   end
 
   def crossbreedV1
-    self.qualifyCandidates
     successors = Array.new { Array.new(@n, nil) }
+    self.qualifyCandidates
     @size.times do
       i, j = Array.new(2) { Random.new.rand(0...@population.length) }
       successor = self.createSuccessor(@population[i], @population[j])
@@ -100,13 +113,8 @@ class Coloring
   end
 
   def crossbreedV2
-    self.countPoints
     successors = Array.new { Array.new(@n, nil) }
-    length = @population.length
-    cards = Array.new
-    (0...length).each do |i|
-      cards += Array.new(@points[i], i)
-    end
+    cards = self.createCards
     @size.times do
       i, j = Array.new(2) { Random.new.rand(0...cards.length) }
       first, second = cards[i], cards[j]
@@ -126,7 +134,7 @@ class Coloring
     return successor
   end
 
-  def selectCandidates
+  def selectionV1
     selected = Array.new { Array.new }
     (0...@population.length).each_with_index do |colors, index|
       dice = (1..100).to_a.sample
@@ -137,9 +145,22 @@ class Coloring
     return selected
   end
 
+  def selectionV2
+    selected = Array.new { Array.new }
+    cards = self.createCards
+    (0...cards.length).each do |item|
+      dice = (1..500).to_a.sample
+      if dice == 1
+        selected.push(cards[item])
+      end
+    end
+    return selected
+  end
+
   def mutationV1
     self.qualifyCandidates
-    self.selectCandidates.each do |v|
+    selected = self.selectionV1
+    selected.each do |v|
       colors = @population[v]
       i, j = Array.new(2) { Random.new.rand(0...@n) }
       colors[i], colors[j] = colors[j], colors[i]
@@ -147,11 +168,12 @@ class Coloring
     end
   end
 
-  def mutationV2(iteration)
+  def mutationV2(iter)
     self.qualifyCandidates
-    log = Math.log(@size / iteration, 3).to_i
+    selected = self.selectionV2
+    log = Math.log(@size / iter + 1, 3).to_i
     card = [log + 2, @n].min
-    self.selectCandidates.each do |v|
+    selected.each do |v|
       colors = @population[v]
       before = Array.new(card) { Random.new.rand(0...@n) }
       after = before.shuffle
